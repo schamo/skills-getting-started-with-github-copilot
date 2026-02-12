@@ -12,6 +12,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+      // Reset activity select
+      activitySelect.innerHTML = '<option value="">Select an activity</option>';
+
+      // Helper to escape user-provided strings
+      function escapeHtml(unsafe) {
+        return String(unsafe).replace(/[&<>"']/g, function (m) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+      }
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -20,11 +29,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // Build participants list HTML
+        const participants = Array.isArray(details.participants) ? details.participants : [];
+        let participantsHTML = '<ul class="participants-list">';
+        if (participants.length === 0) {
+          participantsHTML += '<li class="no-participants">No participants yet</li>';
+        } else {
+          participants.forEach((p) => {
+            // Support either simple email strings or objects with name/email
+            let display = '';
+            if (typeof p === 'string') display = p;
+            else if (p && typeof p === 'object') display = p.name || p.email || JSON.stringify(p);
+            else display = String(p);
+            participantsHTML += `<li class="participant-item">${escapeHtml(display)}</li>`;
+          });
+        }
+        participantsHTML += '</ul>';
+
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
+          <h4>${escapeHtml(name)}</h4>
+          <p>${escapeHtml(details.description)}</p>
+          <p><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Participants:</strong></p>
+          ${participantsHTML}
         `;
 
         activitiesList.appendChild(activityCard);
